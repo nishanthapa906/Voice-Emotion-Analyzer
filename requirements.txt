@@ -1,0 +1,7 @@
+streamlit
+sounddevice
+librosa
+numpy
+tensorflow
+firebase-admin
+pyrebase4
