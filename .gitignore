@@ -1,8 +1,8 @@
 # --- Large Model Files & Weights ---
-*.h5
+
 *.json
 *.weights.h5
-*.pkl
+
 
 # --- Datasets & CSVs ---
 *.csv
