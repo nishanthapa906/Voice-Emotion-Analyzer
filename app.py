@@ -670,59 +670,70 @@ st.markdown("""
 
 </style>
 """, unsafe_allow_html=True)
+db = None
 
+# 2. Session State Initialization
+for key, default in {
+    'user': None,
+    'history': [],
+    'voice_enabled': True,
+    'volume_level': 1.0,
+    'profile_pic': None,
+    'user_name': 'User'
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-if 'user' not in st.session_state:
-    st.session_state.user = None
-if 'history' not in st.session_state:
-    st.session_state.history = []
-if 'voice_enabled' not in st.session_state:
-    st.session_state.voice_enabled = True
-if 'volume_level' not in st.session_state:
-    st.session_state.volume_level = 1.0
-if 'profile_pic' not in st.session_state:
-    st.session_state.profile_pic = None
-if 'user_name' not in st.session_state:
-    st.session_state.user_name = 'User'
-
+# 3. Firebase Admin Initialization (Firestore)
 try:
+    cred_path = "voice-emotion-analyzer-84149-firebase-adminsdk-fbsvc-a4b01a6e8b.json"
     if not firebase_admin._apps:
-        cred_path = "voice-emotion-analyzer-84149-firebase-adminsdk-fbsvc-a4b01a6e8b.json"
         if os.path.exists(cred_path):
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
             db = firestore.client()
     else:
-         db = firestore.client()
-except Exception as e:
-    pass
+        db = firestore.client()
+except Exception:
+    db = None  # Ensure db remains None if init fails
 
+# 4. Pyrebase Configuration (Authentication)
 config = {
     "apiKey": "AIzaSyD2tf_5r_-j9ZFyRuqVKWtP1R0gJMS5JS8",
     "authDomain": "voice-emotion-analyzer-84149.firebaseapp.com",
-    "databaseURL": "",
-    "storageBucket":"voice-emotion-analyzer-84149.firebasestorage.app",
+    "storageBucket": "voice-emotion-analyzer-84149.firebasestorage.app",
+    "databaseURL": "" # Leave empty for Firestore projects
 }
 
 firebase = pyrebase.initialize_app(config)
 auth = firebase.auth()
+
+# --- Functions ---
+
 def save_to_history(uid, data):
-    if db:
+    """Saves prediction data to Firestore history collection."""
+    if db and uid:
         try:
+            # Ensure data includes a Timestamp for ordering later
+            if "Timestamp" not in data:
+                data["Timestamp"] = datetime.now()
             db.collection("users").document(uid).collection("history").add(data)
         except:
-            print("")
+            pass # Keep it silent as requested
 
 def get_history(uid):
-    if db:
+    """Retrieves prediction history for a specific user."""
+    if db and uid:
         try:
-            docs = db.collection("users").document(uid).collection("history").order_by("Timestamp", direction=firestore.Query.DESCENDING).stream()
+            docs = db.collection("users").document(uid).collection("history") \
+                     .order_by("Timestamp", direction=firestore.Query.DESCENDING).stream()
             return [doc.to_dict() for doc in docs]
         except:
             return []
     return []
 
 def firebase_login(email, password):
+    """Logs in user and returns user object."""
     try:
         user = auth.sign_in_with_email_and_password(email, password)
         return user
@@ -730,6 +741,7 @@ def firebase_login(email, password):
         return None
 
 def firebase_signup(email, password, name):
+    """Creates new user in Auth and a corresponding profile in Firestore."""
     try:
         user = auth.create_user_with_email_and_password(email, password)
         uid = user['localId']
