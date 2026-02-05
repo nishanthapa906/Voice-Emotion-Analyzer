@@ -706,12 +706,12 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 auth = firebase.auth()
-
+def save_to_history(uid, data):
     if db:
         try:
             db.collection("users").document(uid).collection("history").add(data)
         except:
-            pass
+            print("")
 
 def get_history(uid):
     if db:
@@ -772,10 +772,7 @@ def load_model():
 
 
 def detect_gender(audio, sr):
-    """
-    FIXED: Balanced gender detection - NO BIAS toward female
-    Uses REAL acoustic science thresholds
-    """
+   
     try:
         # === LAYER 1: Fundamental Frequency (F0) ===
         f0, voiced_flag, voiced_prob = librosa.pyin(
