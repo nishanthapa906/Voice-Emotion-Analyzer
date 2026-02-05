@@ -1,7 +1,12 @@
 streamlit
-sounddevice
+matplotlib
 librosa
 numpy
-tensorflow
+sounddevice
+soundfile
+scipy
+pyttsx3
 firebase-admin
 pyrebase4
+pytz
+Pillow
