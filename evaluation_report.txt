@@ -1,0 +1,29 @@
+
+MODEL EVALUATION SUMMARY
+========================
+
+Test Performance:
+- Accuracy: 80.15%
+- Loss: 1.2306
+- Precision: 80.47%
+- Recall: 80.15%
+- F1-Score: 79.98%
+
+Test Set:
+- Total Samples: 2,408
+- Correct: 1,930
+- Incorrect: 478
+
+Per-Class Performance:
+- Angry       :  79.01%
+- Disgust     :  69.91%
+- Fear        :  77.81%
+- Happy       :  76.52%
+- Neutral     :  93.59%
+- Sad         :  71.65%
+- Surprise    :  86.27%
+
+Model Files Saved:
+- CNN_model_final_complete.h5
+- CNN_model_final_savedmodel/
+- evaluation_summary.pkl

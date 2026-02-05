@@ -1,0 +1,29 @@
+# --- Large Model Files & Weights ---
+*.h5
+*.json
+*.weights.h5
+*.pkl
+
+# --- Datasets & CSVs ---
+*.csv
+*.csv.gz
+
+# --- Python Environment & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+
+# --- IDE & System Files ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Logs & Checkpoints ---
+.ipynb_checkpoints/
+*.log
