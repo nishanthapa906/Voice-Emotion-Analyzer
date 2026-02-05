@@ -1,7 +1,4 @@
-"""
-🎭 VIBECHECK AI - ULTIMATE FINAL VERSION
-Best Logic + Gender Detection + Firebase + UI + Voice + All Features
-"""
+
 
 import os
 import pickle
@@ -24,9 +21,6 @@ import pytz
 import base64
 from PIL import Image
 
-# ============================================================================
-# PAGE CONFIG
-# ============================================================================
 st.set_page_config(
     page_title="VibeCheck AI",
     page_icon="🎭",
@@ -37,9 +31,6 @@ st.set_page_config(
 
 
 
-# ============================================================================
-# CONSTANTS
-# ============================================================================
 SR = 22050
 DURATION = 2.5
 OFFSET = 0.6
@@ -171,9 +162,6 @@ EMOTION_SUGGESTIONS = {
     }
 }
 
-# ============================================================================
-# BEAUTIFUL UI
-# ============================================================================
 st.markdown("""
 <style>
             
@@ -684,9 +672,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ============================================================================
-# SESSION STATE
-# ============================================================================
 if 'user' not in st.session_state:
     st.session_state.user = None
 if 'history' not in st.session_state:
@@ -700,10 +685,6 @@ if 'profile_pic' not in st.session_state:
 if 'user_name' not in st.session_state:
     st.session_state.user_name = 'User'
 
-# ============================================================================
-# FIREBASE INITIALIZATION
-# ============================================================================
-db = None
 try:
     if not firebase_admin._apps:
         cred_path = "voice-emotion-analyzer-84149-firebase-adminsdk-fbsvc-a4b01a6e8b.json"
@@ -726,10 +707,6 @@ config = {
 firebase = pyrebase.initialize_app(config)
 auth = firebase.auth()
 
-# ============================================================================
-# FIREBASE HELPER FUNCTIONS
-# ============================================================================
-def save_history(uid, data):
     if db:
         try:
             db.collection("users").document(uid).collection("history").add(data)
@@ -767,9 +744,7 @@ def firebase_signup(email, password, name):
         st.error(f"Signup failed: {str(e)}")
         return None
 
-# ============================================================================
-# TEXT-TO-SPEECH
-# ============================================================================
+
 def speak_text(text, volume_level=1.0, rate=140):
     if not st.session_state.voice_enabled:
         return
@@ -783,10 +758,7 @@ def speak_text(text, volume_level=1.0, rate=140):
     except:
         pass
 
-# ============================================================================
-# LOAD MODEL
-# ============================================================================
-@st.cache_resource
+
 def load_model():
     try:
         import tensorflow as tf
@@ -833,15 +805,10 @@ def detect_gender(audio, sr):
         spectral_centroid = _estimate_spectral_centroid(audio, sr)
         spectral_tilt = _estimate_spectral_tilt(audio, sr)
         
-        # ==========================================
-        # SCORING SYSTEM (BALANCED)
-        # ==========================================
+        
         score = 0.0
         
-        # PITCH SCORE (Weight: 3.0)
-        # Male: 50-120Hz (deep voice)
-        # Female: 160-250Hz (high voice)
-        # Neutral: 120-160Hz
+       
         pitch_score = 0.0
         
         if median_f0 < 85:
@@ -957,9 +924,7 @@ def detect_gender(audio, sr):
         
         score += tilt_score * 1.0
         
-        # ==========================================
-        # FINAL DECISION (BALANCED)
-        # ==========================================
+    
         max_possible_score = (3.0 * 3.0) + (1.8 * 3.0) + (2.8 * 3.5) + (1.2 * 1.5) + (0.8 * 1.0)
         min_possible_score = (-3.0 * 3.0) + (-1.5 * 3.0) + (-2.5 * 3.5) + (-1.2 * 1.5) + (-1.0 * 1.0)
         
@@ -1128,20 +1093,13 @@ def _gender_fallback(audio, sr):
             return 'uncertain', 0.55
     except Exception:
         return 'uncertain', 0.50
-# ============================================================================
-# EXACT AUDIO PROCESSING LOGIC FROM BEST FILE
-# ============================================================================
+
 def add_noise(data, factor=0.005):
     return (data + factor * np.random.randn(len(data))).astype(np.float32)
 
 def pitch_shift(data, sr, steps):
     return librosa.effects.pitch_shift(y=data, sr=sr, n_steps=steps)
 
-# ============================================================================
-# REPLACE THIS ENTIRE BLOCK in File 1
-# Find: def process_live(audio, sr):
-# Replace everything from that def up to (but not including) def extract_features
-# ============================================================================
 
 def process_live(audio, sr):
   
@@ -1205,9 +1163,7 @@ def process_live(audio, sr):
 
     return audio.astype(np.float32)   
 
-# ============================================================================
-# FEATURE EXTRACTION - EXACT 197 FEATURES
-# ============================================================================
+
 def extract_features(audio, sr):
     f = []
     f.extend(np.mean(librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40).T, axis=0))
@@ -1221,9 +1177,7 @@ def extract_features(audio, sr):
     f.append(np.mean(librosa.feature.spectral_rolloff(y=audio, sr=sr)))
     return np.array(f)
 
-# ============================================================================
-# EXACT ENSEMBLE PREDICTION FROM BEST FILE
-# ============================================================================
+
 def predict_ensemble(audio, sr, model, scaler, encoder):
     """
     EXACT ENSEMBLE METHOD:
@@ -1264,9 +1218,7 @@ def predict_ensemble(audio, sr, model, scaler, encoder):
     result = {labels[i]: float(avg[i]) for i in range(len(labels))}
     return max(result, key=result.get), result
 
-# ============================================================================
-# EXACT FILE PREDICTION FROM BEST FILE
-# ============================================================================
+
 def predict_file(path, model, scaler, encoder):
     try:
         audio, sr = librosa.load(path, duration=DURATION, offset=OFFSET, sr=SR)
@@ -1286,9 +1238,7 @@ def predict_file(path, model, scaler, encoder):
     except:
         return None, None, None
 
-# ============================================================================
-# VISUALIZATIONS
-# ============================================================================
+
 def plot_spectrogram(audio, sr):
     fig, ax = plt.subplots(figsize=(10, 3))
     fig.patch.set_facecolor('#0a0a0f')
@@ -1322,9 +1272,7 @@ def plot_waveform(audio, sr):
     plt.close()
     return buf
 
-# ============================================================================
-# DISPLAY RESULTS
-# ============================================================================
+
 def show_emotion_result(emotion, scores, audio, sr, user_name, uid):
     gender, gender_conf = detect_gender(audio, sr)
     cfg = EMOTIONS[emotion]
@@ -1422,9 +1370,7 @@ def show_emotion_result(emotion, scores, audio, sr, user_name, uid):
         'Source': 'VibeCheck Analysis'
     })
 
-# ============================================================================
-# RECORDING
-# ============================================================================
+
 def record_audio(duration=6):
     try:
         audio = sd.rec(int(duration * SR), samplerate=SR, channels=1, dtype='float32')
@@ -1433,9 +1379,7 @@ def record_audio(duration=6):
     except:
         return None
 
-# ============================================================================
-# AUTH UI
-# ============================================================================
+
 def auth_ui():
     # Wrap everything in the centered auth-wrapper div
     st.markdown("""
@@ -1532,14 +1476,12 @@ def auth_ui():
     st.markdown('</div></div>', unsafe_allow_html=True)
 
 
-# ============================================================================
-# MAIN APP
-# ============================================================================
+
 def main_app():
     model, scaler, encoder = load_model()
     
     if model is None:
-        st.error('❌ Model files not found!')
+        st.error(' Model files not found!')
         st.stop()
     
     st.markdown('<div class="hero"><div class="hero-title">🎭 VibeCheck AI</div><div class="hero-subtitle">Advanced Voice Emotion Recognition System</div></div>', unsafe_allow_html=True)
@@ -1629,9 +1571,7 @@ def main_app():
                 </div>
             """, unsafe_allow_html=True)
 
-# ============================================================================
-# RUN
-# ============================================================================
+
 if st.session_state.user is None:
     auth_ui()
 else:
