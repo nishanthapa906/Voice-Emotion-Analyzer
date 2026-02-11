@@ -1,5 +1,3 @@
-
-
 import os
 import pickle
 import numpy as np
@@ -7,7 +5,6 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import librosa
 import librosa.display
-import sounddevice as sd
 from datetime import datetime
 from io import BytesIO
 import soundfile as sf
@@ -1370,7 +1367,7 @@ def show_emotion_result(emotion, scores, audio, sr, user_name, uid):
     })
     st.session_state.history = st.session_state.history[:20]
     
-    save_history(uid, {
+    save_to_history(uid, {
         'Timestamp': datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S UTC'),
         'Emotion': emotion,
         'Confidence': float(scores[emotion]),
@@ -1380,13 +1377,14 @@ def show_emotion_result(emotion, scores, audio, sr, user_name, uid):
     })
 
 
-def record_audio(duration=6):
-    try:
-        audio = sd.rec(int(duration * SR), samplerate=SR, channels=1, dtype='float32')
-        sd.wait()
-        return audio.flatten()
-    except:
-        return None
+# Function no longer needed - using st.audio_input() instead
+# def record_audio(duration=6):
+#     try:
+#         audio = sd.rec(int(duration * SR), samplerate=SR, channels=1, dtype='float32')
+#         sd.wait()
+#         return audio.flatten()
+#     except:
+#         return None
 
 
 def auth_ui():
@@ -1522,16 +1520,28 @@ def main_app():
     
     with col1:
         st.markdown("### 🎤 Record Audio")
-        if st.button('🔴 Start Recording ', use_container_width=True, type='primary'):
+        
+        # Use Streamlit's audio_input instead of sounddevice
+        audio_file = st.audio_input("Record your voice")
+        
+        if audio_file is not None:
             st.markdown("""
                 <div class="recording-status">
                     <span class="rec-dot"></span>
-                    <span style="color: #f87171; font-weight: 600;">RECORDING... Speak now!</span>
+                    <span style="color: #10b981; font-weight: 600;">Processing... Please wait!</span>
                 </div>
             """, unsafe_allow_html=True)
             
-            audio = record_audio(6)   
-            if audio is not None and len(audio) > 0:
+            # Save uploaded audio to temp file
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
+                tmp.write(audio_file.getvalue())
+                tmp_path = tmp.name
+            
+            # Load and process audio
+            try:
+                audio, _ = librosa.load(tmp_path, sr=SR, duration=6.0)
+                os.unlink(tmp_path)
+                
                 # Process with EXACT logic from best file
                 processed = process_live(audio, SR)
                 
@@ -1542,8 +1552,8 @@ def main_app():
                     show_emotion_result(emo, scores, processed, SR, user_name, st.session_state.user['localId'])
                 else:
                     st.warning('Could not analyze. Please speak louder and try again.')
-            else:
-                st.error('Recording failed. Check microphone.')
+            except Exception as e:
+                st.error(f'Processing failed: {str(e)}')
     
     with col2:
         st.markdown("### 📁 Upload Audio File")

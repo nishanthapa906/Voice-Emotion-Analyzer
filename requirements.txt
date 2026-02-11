@@ -1,8 +1,7 @@
 streamlit>=1.40.0
 matplotlib
-librosa
+librosa>=0.10.0
 numpy
-sounddevice
 soundfile
 scipy
 pyttsx3
@@ -11,3 +10,4 @@ pyrebase4
 pytz
 Pillow
 tensorflow-cpu
+scikit-learn==1.5.1
