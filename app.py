@@ -1351,12 +1351,12 @@ def show_emotion_result(emotion, scores, audio, sr, user_name, uid):
     with tab2:
         st.image(plot_spectrogram(audio, sr), use_container_width=True)
     
-    # Audio playback
-    st.markdown('<div class="section-title">🔊 Audio Playback</div>', unsafe_allow_html=True)
-    audio_bytes = BytesIO()
-    sf.write(audio_bytes, audio, sr, format='WAV')
-    audio_bytes.seek(0)
-    st.audio(audio_bytes, format='audio/wav')
+    # # Audio playback
+    # st.markdown('<div class="section-title">🔊 Audio Playback</div>', unsafe_allow_html=True)
+    # audio_bytes = BytesIO()
+    # sf.write(audio_bytes, audio, sr, format='WAV')
+    # audio_bytes.seek(0)
+    # st.audio(audio_bytes, format='audio/wav')
     
     # Save to history
     st.session_state.history.insert(0, {
@@ -1377,14 +1377,7 @@ def show_emotion_result(emotion, scores, audio, sr, user_name, uid):
     })
 
 
-# Function no longer needed - using st.audio_input() instead
-# def record_audio(duration=6):
-#     try:
-#         audio = sd.rec(int(duration * SR), samplerate=SR, channels=1, dtype='float32')
-#         sd.wait()
-#         return audio.flatten()
-#     except:
-#         return None
+
 
 
 def auth_ui():
