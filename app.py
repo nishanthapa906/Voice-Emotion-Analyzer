@@ -974,131 +974,93 @@ def _estimate_mfcc(audio, sr):
     except Exception:
         return 14.0  # Neutral default
 
-
 def _estimate_formants(audio, sr):
     """
-    Estimate first 3 formants using LPC
+    Estimate first 3 formants (F1, F2, F3) using LPC.
+    Returns (F1, F2, F3) in Hz.
     """
     try:
-        # Pre-emphasis to enhance formants
+        from scipy.signal import lfilter, hamming
+        from numpy.linalg import lstsq
+        
+        # Pre-emphasis
         audio = np.append(audio[0], audio[1:] - 0.97 * audio[:-1])
         
-        frame_length = 512
-        hop = 256
+        N = len(audio)
+        w = hamming(N)
+        audio_windowed = audio * w
         
-        # Use librosa to split into frames
-        frames = librosa.util.frame(audio, frame_length=frame_length, hop_length=hop).T
+        # LPC order (typically 2 + sr/1000)
+        order = int(2 + sr / 1000)
         
-        if len(frames) == 0:
-            return 0, 0, 0
+        # Autocorrelation method
+        autocorr = np.correlate(audio_windowed, audio_windowed, mode='full')
+        autocorr = autocorr[N-1:]
         
-        # Filter by voiced frames (higher energy)
-        rms_vals = np.array([np.sqrt(np.mean(f ** 2)) for f in frames])
-        threshold = np.percentile(rms_vals, 60)
-        voiced_frames = frames[rms_vals >= threshold]
+        # Solve LPC coefficients
+        R = autocorr[:order+1]
+        A = lstsq(np.linalg.toeplitz(R[:-1]), -R[1:], rcond=None)[0]
+        A = np.insert(A, 0, 1.0)
         
-        if len(voiced_frames) == 0:
-            return 0, 0, 0
+        # Find roots of LPC polynomial
+        roots = np.roots(A)
+        roots = [r for r in roots if np.imag(r) >= 0.01]
         
-        all_f1, all_f2, all_f3 = [], [], []
+        angles = np.angle(roots)
+        freqs = angles * (sr / (2 * np.pi))
+        freqs = np.sort(freqs)
         
-        for frame in voiced_frames[:min(50, len(voiced_frames))]:  # Limit frames for speed
-            try:
-                # Apply Hamming window
-                windowed_frame = frame * np.hamming(len(frame))
-                
-                # LPC analysis
-                lpc_coeffs = librosa.core.lpc(windowed_frame, order=14)
-                
-                # Find roots of LPC polynomial
-                roots = np.roots(lpc_coeffs)
-                roots = roots[np.abs(roots) <= 1.0]
-                
-                if len(roots) == 0:
-                    continue
-                
-                # Convert to frequencies
-                angles = np.angle(roots)
-                freqs = np.abs(angles) * sr / (2.0 * np.pi)
-                freqs = np.sort(freqs[freqs > 0])
-                
-                # Extract formants (F1, F2, F3)
-                f1_cands = freqs[(freqs >= 200) & (freqs <= 900)]
-                f2_cands = freqs[(freqs >= 700) & (freqs <= 3000)]
-                f3_cands = freqs[(freqs >= 1800) & (freqs <= 4500)]
-                
-                if len(f1_cands) > 0:
-                    all_f1.append(f1_cands[0])
-                if len(f2_cands) > 0:
-                    all_f2.append(f2_cands[0])
-                if len(f3_cands) > 0:
-                    all_f3.append(f3_cands[0])
-            
-            except Exception:
-                continue
-        
-        f1 = float(np.median(all_f1)) if len(all_f1) > 2 else 0
-        f2 = float(np.median(all_f2)) if len(all_f2) > 2 else 0
-        f3 = float(np.median(all_f3)) if len(all_f3) > 2 else 0
+        # Return first 3 formants
+        f1 = freqs[0] if len(freqs) > 0 else 0
+        f2 = freqs[1] if len(freqs) > 1 else 0
+        f3 = freqs[2] if len(freqs) > 2 else 0
         
         return f1, f2, f3
-    
-    except Exception:
-        return 0, 0, 0
+    except Exception as e:
+        print(f"[ERROR] _estimate_formants: {str(e)}")
+        return 0.0, 0.0, 0.0
 
 
 def _estimate_spectral_centroid(audio, sr):
-    """
-    Spectral centroid - higher for female, lower for male
-    """
     try:
         centroid = librosa.feature.spectral_centroid(y=audio, sr=sr)
         return float(np.mean(centroid))
-    except Exception:
-        return 3000.0
+    except:
+        return 3000.0  # Neutral default
 
 
 def _estimate_spectral_tilt(audio, sr):
     """
-    Spectral slope - steeper (more negative) for male
+    Approximate spectral tilt as slope of log-magnitude spectrum.
+    Negative = male, positive = female
     """
     try:
-        S = np.abs(librosa.stft(audio)) ** 2
-        freqs = librosa.fft_frequencies(sr=sr, n_fft=(S.shape[0] - 1) * 2)
-        avg_spectrum = np.mean(S, axis=1)
-        avg_db = 10 * np.log10(avg_spectrum + 1e-10)
-        
-        # Focus on speech range
-        mask = (freqs >= 200) & (freqs <= 4000)
-        freqs_masked = freqs[mask]
-        db_masked = avg_db[mask]
-        
-        if len(freqs_masked) < 10:
-            return -6.0
-        
-        log_freqs = np.log2(freqs_masked)
-        slope, _ = np.polyfit(log_freqs, db_masked, 1)
-        
+        S = np.abs(np.fft.rfft(audio))
+        freqs = np.fft.rfftfreq(len(audio), 1/sr)
+        log_S = np.log1p(S)
+        # Linear regression slope
+        slope, _ = np.polyfit(freqs, log_S, 1)
         return float(slope)
-    
-    except Exception:
-        return -6.0
+    except:
+        return -5.0  # Neutral default
 
 
 def _gender_fallback(audio, sr):
     """
-    Simple fallback using spectral centroid
+    Fallback if pitch/formants fail: use MFCC only
     """
     try:
-        centroid = float(np.mean(librosa.feature.spectral_centroid(y=audio, sr=sr)))
-        if centroid < 2800:
-            return 'male', 0.60
-        elif centroid > 3500:
-            return 'female', 0.60
+        mfcc_mean = _estimate_mfcc(audio, sr)
+        if mfcc_mean < 13:
+            return 'male', 0.65
+        elif mfcc_mean > 16:
+            return 'female', 0.65
         else:
             return 'uncertain', 0.55
-    except Exception:
+    except:
         return 'uncertain', 0.50
+
+
 
 def add_noise(data, factor=0.005):
     return (data + factor * np.random.randn(len(data))).astype(np.float32)
