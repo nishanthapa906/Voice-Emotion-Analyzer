@@ -771,23 +771,15 @@ def speak_text(text, volume_level=1.0, rate=140):
 def load_model():
     try:
         import tensorflow as tf
-        tf.get_logger().setLevel('ERROR')
-
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-        model_path = os.path.join(BASE_DIR, "CNN_model_IMPROVED_FINAL.h5")
-        scaler_path = os.path.join(BASE_DIR, "scaler_final.pkl")
-        encoder_path = os.path.join(BASE_DIR, "encoder_final.pkl")
-
-        model = tf.keras.models.load_model(model_path)
-        scaler = pickle.load(open(scaler_path, 'rb'))
-        encoder = pickle.load(open(encoder_path, 'rb'))
-
+        
+        model = tf.keras.models.load_model('CNN_model_IMPROVED_FINAL.h5')
+        scaler = pickle.load(open('scaler_final.pkl', 'rb'))
+        encoder = pickle.load(open('encoder_final.pkl', 'rb'))
+        
         return model, scaler, encoder
     except Exception as e:
         print("MODEL LOAD ERROR:", e)
         return None, None, None
-
 
 
 def detect_gender(audio, sr):

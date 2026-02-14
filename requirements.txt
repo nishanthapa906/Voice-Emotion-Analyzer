@@ -1,16 +1,34 @@
-streamlit==1.40.0
-tensorflow-cpu==2.15.0
-librosa==0.11.0
 numpy==1.24.4
-soundfile
+librosa==0.10.1
+matplotlib==3.7.2
+streamlit==1.40.0
+soundfile==0.13.1
 scipy==1.10.1
 scikit-learn==1.5.1
-numba==0.57.1
-llvmlite==0.40.1
-matplotlib==3.7.2
-Pillow
-pyttsx3==2.90
+Pillow==9.5.0
+
+# TensorFlow - use specific version that matches your model
+tensorflow==2.15.0
+keras==2.15.0
+h5py==3.10.0
+
+# Firebase dependencies - specific versions to avoid conflicts
 firebase-admin==6.2.0
-pyrebase4==4.5.0
-pytz
-sounddevice
+Pyrebase4==4.5.0
+requests==2.27.1
+urllib3==1.26.15
+requests-toolbelt==0.10.1
+cryptography==41.0.7
+
+# Audio processing
+audioread==3.1.0
+numba==0.57.1
+sounddevice==0.5.5
+
+# Text-to-speech (optional for local, won't work on cloud)
+pyttsx3==2.90
+pywin32==306
+
+# Other utilities
+python-dateutil==2.9.0
+pytz==2024.1
