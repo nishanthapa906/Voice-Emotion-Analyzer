@@ -4,7 +4,6 @@ import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 import librosa
-import librosa.display
 from datetime import datetime
 from io import BytesIO
 import soundfile as sf
@@ -772,15 +771,30 @@ def load_model():
     try:
         import tensorflow as tf
         
-        model = tf.keras.models.load_model('CNN_model_IMPROVED_FINAL.h5')
+        original_init = tf.keras.layers.InputLayer.__init__
+        
+        def patched_init(self, input_shape=None, batch_size=None, dtype=None, 
+                         input_tensor=None, sparse=None, name=None, ragged=None,
+                         type_spec=None, batch_shape=None, **kwargs):
+            if batch_shape is not None:
+                batch_size = batch_shape[0]
+                input_shape = batch_shape[1:]
+            original_init(self, input_shape=input_shape, batch_size=batch_size,
+                         dtype=dtype, input_tensor=input_tensor, sparse=sparse,
+                         name=name, ragged=ragged, type_spec=type_spec, **kwargs)
+        
+        tf.keras.layers.InputLayer.__init__ = patched_init
+        
+        model = tf.keras.models.load_model('CNN_model_IMPROVED_FINAL.h5', compile=False)
         scaler = pickle.load(open('scaler_final.pkl', 'rb'))
         encoder = pickle.load(open('encoder_final.pkl', 'rb'))
+        
+        tf.keras.layers.InputLayer.__init__ = original_init
         
         return model, scaler, encoder
     except Exception as e:
         print("MODEL LOAD ERROR:", e)
         return None, None, None
-
 
 def detect_gender(audio, sr):
    
